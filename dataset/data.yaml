@@ -1,0 +1,9 @@
+train: train/images
+val: valid/images
+test: test/images
+
+nc: 3
+names:
+  0: Wearing Mask
+  1: Wore Mask Incorrectly
+  2: No Mask

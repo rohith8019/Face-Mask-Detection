@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Face Mask Detection</title>
+    <meta name="description" content="Face Mask Detection powered by Ultralytics YOLOv8 Nano">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Main Workspace -->
+        <main class="main-content">
+            <!-- Left Panel: Controls & Upload -->
+            <section class="control-panel">
+                <div class="card glass-card">
+                    <div class="card-header">
+                        <h2>Select Input Source</h2>
+                    </div>
+
+                    <!-- Upload Type Tabs -->
+                    <div class="tab-group" role="tablist">
+                        <button class="tab-btn active" id="tab-single" type="button">
+                            <span>📄 Single Image</span>
+                        </button>
+                        <button class="tab-btn" id="tab-folder" type="button">
+                            <span>📁 Folder / Batch</span>
+                        </button>
+                    </div>
+
+                    <!-- Drag & Drop Zone -->
+                    <div class="drop-zone" id="drop-zone">
+                        <input type="file" id="file-input-single" accept="image/png, image/jpeg, image/jpg, image/webp" class="file-hidden">
+                        <input type="file" id="file-input-folder" webkitdirectory directory multiple class="file-hidden">
+                        
+                        <div class="drop-content">
+                            <div class="upload-icon-wrapper">
+                                <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                            </div>
+                            <p class="drop-text" id="drop-main-text">Drag & drop your image here</p>
+                            <p class="drop-subtext" id="drop-sub-text">or click to browse files (JPG, PNG, WEBP)</p>
+                            <div class="selected-badge" id="selected-badge" style="display: none;">
+                                <span id="selected-count">0 files selected</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Inference Sliders -->
+                    <div class="settings-group">
+                        <div class="slider-row">
+                            <div class="slider-header">
+                                <label for="conf-slider">Confidence Threshold</label>
+                                <span class="slider-val" id="conf-val">0.40</span>
+                            </div>
+                            <input type="range" id="conf-slider" min="0.10" max="0.90" step="0.05" value="0.40">
+                            <span class="slider-hint">Prevents phantom boxes on background / clothing</span>
+                        </div>
+
+                        <div class="slider-row">
+                            <div class="slider-header">
+                                <label for="iou-slider">NMS Overlap (IoU)</label>
+                                <span class="slider-val" id="iou-val">0.45</span>
+                            </div>
+                            <input type="range" id="iou-slider" min="0.10" max="0.90" step="0.05" value="0.45">
+                            <span class="slider-hint">Suppresses multiple boxes on the same face</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="btn-group">
+                        <button class="btn btn-primary" id="detect-btn" disabled>
+                            <span id="btn-spinner" class="spinner" style="display: none;"></span>
+                            <span id="btn-text">Detect Face Masks</span>
+                        </button>
+                        <button class="btn btn-secondary" id="clear-btn" type="button">Clear</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Panel: Results & Image Gallery -->
+            <section class="results-panel">
+                <!-- Aggregate Stats Bar (Shown when results exist) -->
+                <div class="stats-bar card" id="stats-bar" style="display: none;">
+                    <div class="stat-card">
+                        <span class="stat-label">Total Faces</span>
+                        <span class="stat-value" id="stat-total">0</span>
+                    </div>
+                    <div class="stat-card stat-green">
+                        <span class="stat-label">Wearing Mask</span>
+                        <span class="stat-value" id="stat-wearing">0</span>
+                    </div>
+                    <div class="stat-card stat-yellow">
+                        <span class="stat-label">Incorrect Mask</span>
+                        <span class="stat-value" id="stat-incorrect">0</span>
+                    </div>
+                    <div class="stat-card stat-red">
+                        <span class="stat-label">No Mask</span>
+                        <span class="stat-value" id="stat-nomask">0</span>
+                    </div>
+                    <div class="stat-card stat-blue">
+                        <span class="stat-label">Inference Latency</span>
+                        <span class="stat-value" id="stat-latency">0 ms</span>
+                    </div>
+                </div>
+
+                <!-- Empty State Placeholder -->
+                <div class="empty-state card" id="empty-state">
+                    <div class="empty-graphic">🖼️</div>
+                    <h3>No Inference Results Yet</h3>
+                    <p>Upload a single face image or an entire folder of photos on the left, then click <strong>Detect Face Masks</strong> to view annotated bounding boxes and live compliance analytics.</p>
+                </div>
+
+                <!-- Results Container -->
+                <div class="results-container" id="results-container" style="display: none;">
+                    <!-- Gallery Cards will be injected dynamically -->
+                </div>
+
+                <!-- Terminal-Style Output Log -->
+                <div class="terminal-card card" id="terminal-card">
+                    <div class="terminal-header">
+                        <div class="terminal-dots">
+                            <span></span><span></span><span></span>
+                        </div>
+                        <span class="terminal-title">System Execution Output</span>
+                    </div>
+                    <pre class="terminal-body" id="terminal-log">Ready for detection. Model weights loaded from models/best.pt.</pre>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Fullscreen Image Zoom Modal -->
+    <div class="modal" id="image-modal">
+        <span class="modal-close" id="modal-close">&times;</span>
+        <img class="modal-content" id="modal-img" alt="Zoomed Detection">
+        <div class="modal-caption" id="modal-caption"></div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
